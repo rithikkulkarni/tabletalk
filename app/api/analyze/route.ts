@@ -25,7 +25,6 @@ async function callModel(userPrompt: string, systemPrompt: string): Promise<stri
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.1,
-    maxTokens: 4096,
   });
   return text;
 }

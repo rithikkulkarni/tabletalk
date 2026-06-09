@@ -7,6 +7,8 @@ interface ConfigPanelProps {
   configJson: string;
   chartJson: string | null;
   columns: ColumnDef[];
+  showTableConfig: boolean;
+  showVisualConfig: boolean;
   onApplyConfig: (parsed: TableConfig) => void;
   onApplyVisualConfig: (chartJson: string) => void;
   onResetConfig: () => void;
@@ -15,8 +17,8 @@ interface ConfigPanelProps {
 }
 
 export default function ConfigPanel({
-  configJson, chartJson, columns, onApplyConfig, onApplyVisualConfig,
-  onResetConfig, onClearChart, onToggleColumn,
+  configJson, chartJson, columns, showTableConfig, showVisualConfig,
+  onApplyConfig, onApplyVisualConfig, onResetConfig, onClearChart, onToggleColumn,
 }: ConfigPanelProps) {
   const [tableText, setTableText] = useState(configJson);
   const [visualText, setVisualText] = useState(chartJson ?? '');
@@ -70,7 +72,7 @@ export default function ConfigPanel({
   return (
     <div className="json-panels-row">
       {/* Table Config */}
-      <div className="json-panel-half panel">
+      {showTableConfig && <div className="json-panel-half panel">
         <div className="json-header">
           <h2>Table Config</h2>
           <div className="json-actions">
@@ -103,17 +105,17 @@ export default function ConfigPanel({
           spellCheck={false}
         />
         {tableError && <p className="status status--error">{tableError}</p>}
-      </div>
+      </div>}
 
       {/* Visual Config */}
-      {chartJson !== null && (
+      {showVisualConfig && (
         <div className="json-panel-half panel">
           <div className="json-header">
             <h2>Visual Config</h2>
             <div className="json-actions">
-              <button className="ghost-btn small-btn" onClick={applyVisual}>Apply</button>
-              <button className="ghost-btn small-btn" onClick={exportVisual}>Export</button>
-              <button className="ghost-btn small-btn" onClick={onClearChart}>Clear</button>
+              <button className="ghost-btn small-btn" onClick={applyVisual} disabled={!chartJson}>Apply</button>
+              <button className="ghost-btn small-btn" onClick={exportVisual} disabled={!chartJson}>Export</button>
+              <button className="ghost-btn small-btn" onClick={onClearChart} disabled={!chartJson}>Clear</button>
             </div>
           </div>
           <textarea

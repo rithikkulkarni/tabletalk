@@ -8,11 +8,12 @@ Chart.register(...registerables);
 interface ChartPanelProps {
   chartJson: string;
   chartTitle: string;
+  isDark: boolean;
   onTitleChange: (title: string) => void;
   onDismiss: () => void;
 }
 
-export default function ChartPanel({ chartJson, chartTitle, onTitleChange, onDismiss }: ChartPanelProps) {
+export default function ChartPanel({ chartJson, chartTitle, isDark, onTitleChange, onDismiss }: ChartPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef  = useRef<Chart | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -27,18 +28,49 @@ export default function ChartPanel({ chartJson, chartTitle, onTitleChange, onDis
     let cfg: Record<string, unknown>;
     try { cfg = JSON.parse(chartJson); } catch { return; }
 
-    // Inject responsive options (mirrors renderSepChart() in the original JSF)
+    const tickColor  = isDark ? '#8b949e' : '#64748b';
+    const gridColor  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+    const tooltipBg  = isDark ? '#1c2128' : '#ffffff';
+    const tooltipBdr = isDark ? '#30363d' : '#e2e8f0';
+    const tooltipTxt = isDark ? '#e6edf3' : '#0f172a';
+
+    const hasAxes = cfg.type === 'bar' || cfg.type === 'line';
+
     const options: Record<string, unknown> = {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'top' },
-        tooltip: { mode: 'index', intersect: false },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: tickColor, boxWidth: 12, padding: 16, font: { size: 12 } },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: tooltipBg,
+          borderColor: tooltipBdr,
+          borderWidth: 1,
+          titleColor: tooltipTxt,
+          bodyColor: tickColor,
+          padding: 10,
+        },
       },
-      scales: (cfg.type === 'bar' || cfg.type === 'line') ? {
-        x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { maxRotation: 45 } },
-        y: { grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true,
-             ticks: { callback: (v: unknown) => typeof v === 'number' && v >= 1000 ? `${(v/1000).toFixed(0)}k` : v } },
+      scales: hasAxes ? {
+        x: {
+          grid: { color: gridColor },
+          ticks: { color: tickColor, maxRotation: 45 },
+          border: { color: gridColor },
+        },
+        y: {
+          grid: { color: gridColor },
+          border: { color: gridColor },
+          beginAtZero: true,
+          ticks: {
+            color: tickColor,
+            callback: (v: unknown) => typeof v === 'number' && v >= 1000 ? `${(v/1000).toFixed(0)}k` : v,
+          },
+        },
       } : undefined,
     };
     cfg.options = options;
@@ -46,7 +78,7 @@ export default function ChartPanel({ chartJson, chartTitle, onTitleChange, onDis
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     chartRef.current = new Chart(canvasRef.current, cfg as any);
     return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
-  }, [chartJson]);
+  }, [chartJson, isDark]);
 
   const downloadChart = () => {
     if (!canvasRef.current) return;
