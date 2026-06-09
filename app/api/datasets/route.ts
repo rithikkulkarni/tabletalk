@@ -6,11 +6,11 @@ export async function GET(request: Request) {
   const id = searchParams.get('id');
 
   if (id) {
-    const ds = await getDataset(id);
+    const ds = getDataset(id);
     return NextResponse.json(ds);
   }
 
-  const map = await getAllDatasets();
+  const map = getAllDatasets();
   const list = Array.from(map.values()).map(d => ({
     id: d.id,
     label: d.label,

@@ -122,7 +122,7 @@ export default function ConfigPanel({
             className="config-textarea visual-config-textarea"
             value={visualText}
             onChange={e => setVisualText(e.target.value)}
-            placeholder="Chart.js config JSON will appear here after AI generates a chart."
+            placeholder="JSON will appear here after AI generates a chart."
             spellCheck={false}
           />
           {visualError && <p className="status status--error">{visualError}</p>}
