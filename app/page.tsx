@@ -231,16 +231,21 @@ export default function HomePage() {
     let newDs   = dsRef.current;
     let newSort: SortEntry[] = sortRef.current;
 
-    if (parsed.dataset && parsed.dataset !== newDs) {
+    const datasetChanged = !!(parsed.dataset && parsed.dataset !== newDs);
+    if (datasetChanged) {
       const ds = allDatasets.find(d => d.id === parsed.dataset);
       if (ds) {
         newCols = ds.columns.map(c => ({ ...c, visible: true }));
         newRows = ds.rows;
-        newDs   = parsed.dataset;
+        newDs   = parsed.dataset!;
         setSelectedDataset(newDs);
       }
     }
-    if (Array.isArray(parsed.columns) && parsed.columns.length) newCols = applyColumnOrder(newCols, parsed.columns);
+    // Only apply column ordering when dataset didn't change — if it did, parsed.columns
+    // contains field names from the old dataset and would hide all new dataset columns.
+    if (!datasetChanged && Array.isArray(parsed.columns) && parsed.columns.length) {
+      newCols = applyColumnOrder(newCols, parsed.columns);
+    }
     if (Array.isArray(parsed.sort) && parsed.sort.length) {
       newSort = parsed.sort;
       newRows = sortRows(newRows, newSort);
