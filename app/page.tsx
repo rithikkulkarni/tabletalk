@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { Database, Sun, Moon, Layers, Check } from 'lucide-react';
 import type {
   DatasetInfo, ColumnDef, SortEntry, TableConfig, SavedView,
   ChatMessage, Conversation, ViewSnapshot, AnalyzeResponse,
@@ -65,7 +66,63 @@ function sortRows(rows: Record<string, unknown>[], sort: SortEntry[]): Record<st
   });
 }
 
+type PanelKey = 'controls' | 'tableConfig' | 'visualConfig' | 'chat';
+const PANEL_LABELS: Record<PanelKey, string> = {
+  controls:     'Controls Bar',
+  tableConfig:  'Table Config',
+  visualConfig: 'Visual Config',
+  chat:         'AI Assistant',
+};
+const DEFAULT_PANELS: Record<PanelKey, boolean> = {
+  controls: true, tableConfig: true, visualConfig: true, chat: true,
+};
+
 export default function HomePage() {
+  const [isDark, setIsDark] = useState(false);
+  const [panelVis, setPanelVis] = useState<Record<PanelKey, boolean>>(DEFAULT_PANELS);
+  const [showViewMenu, setShowViewMenu] = useState(false);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('tt-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = saved === 'dark' || (!saved && prefersDark);
+    setIsDark(dark);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+
+    const savedPanels = localStorage.getItem('tt-panels');
+    if (savedPanels) {
+      try { setPanelVis({ ...DEFAULT_PANELS, ...JSON.parse(savedPanels) }); } catch { /* noop */ }
+    }
+  }, []);
+
+  // Close view menu on outside click
+  useEffect(() => {
+    if (!showViewMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+        setShowViewMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showViewMenu]);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+    localStorage.setItem('tt-theme', next ? 'dark' : 'light');
+  };
+
+  const togglePanel = (key: PanelKey) => {
+    setPanelVis(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('tt-panels', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const [allDatasets, setAllDatasets] = useState<DatasetInfo[]>([]);
   const [selectedDataset, setSelectedDataset] = useState('payments');
   const [columns, setColumns] = useState<ColumnDef[]>([]);
@@ -339,32 +396,75 @@ export default function HomePage() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>TableTalk</h1>
-        <p>AI-powered data analysis &amp; visualization</p>
+        <div className="app-header-inner">
+          <div className="app-brand">
+            <div className="app-brand-icon">
+              <Database size={18} strokeWidth={1.75} />
+            </div>
+            <div className="app-brand-text">
+              <h1>TableTalk</h1>
+              <span className="app-tagline">AI-powered data analysis &amp; visualization</span>
+            </div>
+          </div>
+          <div className="app-header-actions">
+            <div className="view-menu-wrap" ref={viewMenuRef}>
+              <button
+                className={`theme-toggle-btn${showViewMenu ? ' active' : ''}`}
+                onClick={() => setShowViewMenu(v => !v)}
+                title="Toggle panels"
+              >
+                <Layers size={15} strokeWidth={2} />
+              </button>
+              {showViewMenu && (
+                <div className="view-menu">
+                  <div className="view-menu-title">Panels</div>
+                  {(Object.keys(PANEL_LABELS) as PanelKey[]).map(key => (
+                    <button key={key} className="view-menu-item" onClick={() => togglePanel(key)}>
+                      <span>{PANEL_LABELS[key]}</span>
+                      <span className="view-menu-check">
+                        {panelVis[key] && <Check size={13} strokeWidth={2.5} />}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun size={15} strokeWidth={2} /> : <Moon size={15} strokeWidth={2} />}
+            </button>
+          </div>
+        </div>
       </header>
       <div className="app-body">
         <div className="main-content">
-          <ControlsPanel
-            datasets={allDatasets}
-            selectedDataset={selectedDataset}
-            savedViews={savedViews}
-            isAnalysisView={analysisViewActive}
-            onDatasetChange={handleDatasetChange}
-            onResetView={() => { loadDatasetById(dsRef.current, allDatasets); setStatusMessage('Reset to default view.'); }}
-            onRestoreDatasetView={() => {
-              const ds = allDatasets.find(d => d.id === dsRef.current);
-              if (ds) { const cols = ds.columns.map(c => ({ ...c, visible: true })); setColumns(cols); setRows(ds.rows); setSortEntries([]); setAnalysisViewActive(false); setPreAggRows([]); setGroupByFields([]); setConfigJson(buildConfigJson(ds.id, cols, [])); }
-              setStatusMessage('Restored dataset view.');
-            }}
-            onSaveView={handleSaveView}
-            onLoadView={handleLoadView}
-            onDeleteView={handleDeleteView}
-          />
+          {panelVis.controls && (
+            <ControlsPanel
+              datasets={allDatasets}
+              selectedDataset={selectedDataset}
+              savedViews={savedViews}
+              isAnalysisView={analysisViewActive}
+              onDatasetChange={handleDatasetChange}
+              onResetView={() => { loadDatasetById(dsRef.current, allDatasets); setStatusMessage('Reset to default view.'); }}
+              onRestoreDatasetView={() => {
+                const ds = allDatasets.find(d => d.id === dsRef.current);
+                if (ds) { const cols = ds.columns.map(c => ({ ...c, visible: true })); setColumns(cols); setRows(ds.rows); setSortEntries([]); setAnalysisViewActive(false); setPreAggRows([]); setGroupByFields([]); setConfigJson(buildConfigJson(ds.id, cols, [])); }
+                setStatusMessage('Restored dataset view.');
+              }}
+              onSaveView={handleSaveView}
+              onLoadView={handleLoadView}
+              onDeleteView={handleDeleteView}
+            />
+          )}
 
           {chartJson && (
             <ChartPanel
               chartJson={chartJson}
               chartTitle={chartTitle}
+              isDark={isDark}
               onTitleChange={t => setChartTitle(t)}
               onDismiss={() => { setChartJson(null); setChartTitle(''); }}
             />
@@ -394,19 +494,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          <ConfigPanel
-            configJson={configJson}
-            chartJson={chartJson}
-            columns={columns}
-            onApplyConfig={handleApplyConfig}
-            onApplyVisualConfig={j => setChartJson(j)}
-            onResetConfig={handleResetConfig}
-            onClearChart={() => { setChartJson(null); setChartTitle(''); }}
-            onToggleColumn={handleToggleColumn}
-          />
+          {(panelVis.tableConfig || panelVis.visualConfig) && (
+            <ConfigPanel
+              configJson={configJson}
+              chartJson={chartJson}
+              columns={columns}
+              showTableConfig={panelVis.tableConfig}
+              showVisualConfig={panelVis.visualConfig}
+              onApplyConfig={handleApplyConfig}
+              onApplyVisualConfig={j => setChartJson(j)}
+              onResetConfig={handleResetConfig}
+              onClearChart={() => { setChartJson(null); setChartTitle(''); }}
+              onToggleColumn={handleToggleColumn}
+            />
+          )}
         </div>
 
-        <div className="chat-sidebar-wrap">
+        {panelVis.chat && <div className="chat-sidebar-wrap">
           <ChatSidebar
             messages={messages}
             conversations={conversations}
@@ -422,7 +526,7 @@ export default function HomePage() {
             onSendMessage={handleSendMessage}
             onRestoreSnapshot={restoreSnapshot}
           />
-        </div>
+        </div>}
       </div>
 
       {selectedRow && (
