@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ColumnDef } from '@/lib/types';
 
 interface RowDetailModalProps {
   row: Record<string, unknown> | null;
   columns: ColumnDef[];
+  dsColumns: ColumnDef[];
   preAggRows: Record<string, unknown>[];
   groupByFields: string[];
   onClose: () => void;
@@ -24,50 +25,54 @@ function formatFieldName(field: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export default function RowDetailModal({ row, columns, preAggRows, groupByFields, onClose }: RowDetailModalProps) {
+export default function RowDetailModal({ row, columns, dsColumns, preAggRows, groupByFields, onClose }: RowDetailModalProps) {
   const [drillIdx, setDrillIdx] = useState(0);
+
+  // Reset to first record whenever the selected row changes
+  useEffect(() => { setDrillIdx(0); }, [row]);
 
   if (!row) return null;
 
-  // Determine if we have drilldown context (aggregated row)
   const hasDrilldown = preAggRows.length > 0 && groupByFields.length > 0;
-
-  // Find matching source records for this aggregated row
   const matchingRows = hasDrilldown
-    ? preAggRows.filter(pr => groupByFields.every(f => pr[f] === row[f]))
+    ? preAggRows.filter(pr => groupByFields.every(f => String(pr[f]) === String(row[f])))
     : [];
-
   const showDrilldown = hasDrilldown && matchingRows.length > 0;
-  const drillRow = showDrilldown ? matchingRows[Math.min(drillIdx, matchingRows.length - 1)] : null;
+  const safeIdx = Math.min(drillIdx, Math.max(0, matchingRows.length - 1));
+  const drillRow = showDrilldown ? matchingRows[safeIdx] : null;
 
-  const displayRow = showDrilldown && drillRow ? drillRow : row;
-  const entries = Object.entries(displayRow);
-
+  // Use original dataset columns for drilldown records, aggregated columns otherwise
+  const activeCols = showDrilldown ? dsColumns : columns;
   const isCurrencyField = (field: string): boolean =>
-    columns.find(c => c.field === field)?.currency ?? false;
+    activeCols.find(c => c.field === field)?.currency ?? false;
+
+  const displayRow = drillRow ?? row;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Record Details</span>
+          <span className="modal-title">
+            {showDrilldown ? 'Source Record Details' : 'Record Details'}
+          </span>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
         {showDrilldown && (
           <>
             <div className="drilldown-header">
-              Showing source records for: {groupByFields.map(f => `${formatFieldName(f)}: ${row[f]}`).join(', ')}
+              {matchingRows.length} source record{matchingRows.length !== 1 ? 's' : ''} for:{' '}
+              {groupByFields.map(f => `${formatFieldName(f)}: ${row[f]}`).join(', ')}
             </div>
             <div className="drilldown-nav">
               <button
                 className="drilldown-nav-btn"
-                disabled={drillIdx === 0}
+                disabled={safeIdx === 0}
                 onClick={() => setDrillIdx(i => Math.max(0, i - 1))}
               >‹ Prev</button>
               <select
                 className="drilldown-select"
-                value={drillIdx}
+                value={safeIdx}
                 onChange={e => setDrillIdx(Number(e.target.value))}
               >
                 {matchingRows.map((_, i) => (
@@ -76,35 +81,22 @@ export default function RowDetailModal({ row, columns, preAggRows, groupByFields
               </select>
               <button
                 className="drilldown-nav-btn"
-                disabled={drillIdx >= matchingRows.length - 1}
+                disabled={safeIdx >= matchingRows.length - 1}
                 onClick={() => setDrillIdx(i => Math.min(matchingRows.length - 1, i + 1))}
               >Next ›</button>
-              <span className="drilldown-of">{drillIdx + 1} of {matchingRows.length}</span>
+              <span className="drilldown-of">{safeIdx + 1} of {matchingRows.length}</span>
             </div>
           </>
         )}
 
-        {!showDrilldown && (
-          <div className="row-detail-body">
-            {Object.entries(row).map(([key, val]) => (
-              <div className="row-detail-row" key={key}>
-                <span className="row-detail-key">{formatFieldName(key)}</span>
-                <span className="row-detail-val">{formatValue(val, isCurrencyField(key))}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {showDrilldown && (
-          <div className="row-detail-body drilldown-record">
-            {entries.map(([key, val]) => (
-              <div className="row-detail-row" key={key}>
-                <span className="row-detail-key">{formatFieldName(key)}</span>
-                <span className="row-detail-val">{formatValue(val, isCurrencyField(key))}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className={`row-detail-body${showDrilldown ? ' drilldown-record' : ''}`}>
+          {Object.entries(displayRow).map(([key, val]) => (
+            <div className="row-detail-row" key={key}>
+              <span className="row-detail-key">{formatFieldName(key)}</span>
+              <span className="row-detail-val">{formatValue(val, isCurrencyField(key))}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

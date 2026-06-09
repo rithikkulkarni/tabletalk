@@ -429,6 +429,7 @@ export default function HomePage() {
         <RowDetailModal
           row={selectedRow}
           columns={columns}
+          dsColumns={allDatasets.find(d => d.id === selectedDataset)?.columns ?? []}
           preAggRows={preAggRows}
           groupByFields={groupByFields}
           onClose={() => setSelectedRow(null)}
