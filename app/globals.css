@@ -95,39 +95,12 @@ body {
   height: 58px;
 }
 
-.app-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.app-brand-icon {
-  width: 34px;
-  height: 34px;
-  background: var(--accent);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(99,102,241,.35);
-}
-
-.app-brand-text h1 {
-  font-size: 1.05rem;
+.app-title {
+  font-size: 1.1rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
+  letter-spacing: -0.03em;
   color: var(--text);
-}
-
-.app-tagline {
-  font-size: 0.72rem;
-  color: var(--muted);
-  display: block;
-  margin-top: 3px;
-  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .app-header-actions {
@@ -259,7 +232,9 @@ body {
 }
 
 /* ── Controls ─────────────────────────────────────────────────────────────── */
-.controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.controls { display: flex; flex-direction: column; gap: 10px; }
+.controls-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.controls-hdivider { height: 1px; background: var(--border); margin: 0; }
 .field { display: flex; align-items: center; gap: 8px; }
 .field label { font-weight: 500; font-size: 0.82rem; white-space: nowrap; color: var(--text-subtle); }
 .controls-divider { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
@@ -862,6 +837,158 @@ tfoot td {
   font-weight: 500;
 }
 .drilldown-record { padding: 6px 0; }
+
+/* ── Danger button ────────────────────────────────────────────────────────── */
+.danger-btn {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  font-weight: 500;
+}
+.danger-btn:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; }
+.danger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.icon-btn { padding: 5px 7px; height: 26px; }
+
+/* Delete confirm button (armed state) — specificity beats .ghost-btn */
+.ghost-btn.delete-confirm-btn {
+  color: var(--red);
+  border-color: var(--red);
+  background: transparent;
+  font-weight: 500;
+  height: 26px;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100px;
+  animation: confirmExpand 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.ghost-btn.delete-confirm-btn:hover:not(:disabled) {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+@keyframes confirmExpand {
+  from { max-width: 28px; }
+  to   { max-width: 100px; }
+}
+
+/* ── CSV Import Modal ─────────────────────────────────────────────────────── */
+.import-csv-btn { white-space: nowrap; flex-shrink: 0; }
+
+.csv-modal-content { width: 500px; }
+
+.csv-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.csv-drop-zone {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: calc(var(--radius) + 2px);
+  padding: 44px 24px 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: var(--surface-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+.csv-drop-zone:hover { border-color: var(--accent); background: var(--accent-subtle); }
+.csv-drop-zone:hover .csv-drop-icon-wrap { color: var(--accent); }
+.csv-drop-zone--active {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-subtle);
+}
+.csv-drop-zone--active .csv-drop-icon-wrap { color: var(--accent); }
+.csv-drop-zone--ready {
+  border-color: var(--green);
+  border-style: solid;
+  background: var(--green-subtle);
+}
+
+.csv-drop-icon-wrap {
+  color: var(--border-strong);
+  margin-bottom: 10px;
+  transition: color 0.15s;
+}
+.csv-drop-icon-wrap--ready { color: var(--green); }
+
+.csv-drop-primary {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.csv-drop-secondary {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.csv-file-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.csv-file-stats {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.csv-column-preview {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.csv-preview-label {
+  font-size: 0.67rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.csv-preview-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.csv-col-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-subtle);
+}
+.csv-col-chip--num {
+  border-color: var(--accent-border);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.csv-col-type {
+  font-size: 0.68rem;
+  font-weight: 700;
+  opacity: 0.65;
+  font-family: var(--font-geist-mono, monospace);
+}
+
+.csv-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface-raised);
+}
 
 /* ── Scrollbars ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }

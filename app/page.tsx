@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Database, Sun, Moon, Layers, Check } from 'lucide-react';
+import { Sun, Moon, Layers, Check } from 'lucide-react';
 import type {
   DatasetInfo, ColumnDef, SortEntry, TableConfig, SavedView,
   ChatMessage, Conversation, ViewSnapshot, AnalyzeResponse,
@@ -124,7 +124,7 @@ export default function HomePage() {
   };
 
   const [allDatasets, setAllDatasets] = useState<DatasetInfo[]>([]);
-  const [selectedDataset, setSelectedDataset] = useState('payments');
+  const [selectedDataset, setSelectedDataset] = useState('candy');
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [sortEntries, setSortEntries] = useState<SortEntry[]>([]);
@@ -183,7 +183,7 @@ export default function HomePage() {
       .then(r => r.json())
       .then((list: DatasetInfo[]) => {
         setAllDatasets(list);
-        loadDatasetById('payments', list);
+        loadDatasetById('candy', list);
       });
     setMessages([{
       id: newId(), role: 'assistant', title: 'Analyst',
@@ -231,16 +231,21 @@ export default function HomePage() {
     let newDs   = dsRef.current;
     let newSort: SortEntry[] = sortRef.current;
 
-    if (parsed.dataset && parsed.dataset !== newDs) {
+    const datasetChanged = !!(parsed.dataset && parsed.dataset !== newDs);
+    if (datasetChanged) {
       const ds = allDatasets.find(d => d.id === parsed.dataset);
       if (ds) {
         newCols = ds.columns.map(c => ({ ...c, visible: true }));
         newRows = ds.rows;
-        newDs   = parsed.dataset;
+        newDs   = parsed.dataset!;
         setSelectedDataset(newDs);
       }
     }
-    if (Array.isArray(parsed.columns) && parsed.columns.length) newCols = applyColumnOrder(newCols, parsed.columns);
+    // Only apply column ordering when dataset didn't change — if it did, parsed.columns
+    // contains field names from the old dataset and would hide all new dataset columns.
+    if (!datasetChanged && Array.isArray(parsed.columns) && parsed.columns.length) {
+      newCols = applyColumnOrder(newCols, parsed.columns);
+    }
     if (Array.isArray(parsed.sort) && parsed.sort.length) {
       newSort = parsed.sort;
       newRows = sortRows(newRows, newSort);
@@ -393,19 +398,26 @@ export default function HomePage() {
     if (view) setStatusMessage(`View "${view.name}" deleted.`);
   };
 
+  const handleImportDataset = (ds: DatasetInfo) => {
+    setAllDatasets(prev => [...prev, ds]);
+    loadDatasetById(ds.id, [...allDatasets, ds]);
+    setStatusMessage(`Imported dataset "${ds.label}" (${ds.rows.length.toLocaleString()} rows).`);
+  };
+
+  const handleDeleteDataset = (id: string) => {
+    const target = allDatasets.find(d => d.id === id);
+    const remaining = allDatasets.filter(d => d.id !== id);
+    if (!remaining.length) return;
+    setAllDatasets(remaining);
+    if (selectedDataset === id) loadDatasetById(remaining[0].id, remaining);
+    if (target) setStatusMessage(`Dataset "${target.label}" deleted.`);
+  };
+
   return (
     <div className="app">
       <header className="app-header">
         <div className="app-header-inner">
-          <div className="app-brand">
-            <div className="app-brand-icon">
-              <Database size={18} strokeWidth={1.75} />
-            </div>
-            <div className="app-brand-text">
-              <h1>TableTalk</h1>
-              <span className="app-tagline">AI-powered data analysis &amp; visualization</span>
-            </div>
-          </div>
+          <h1 className="app-title">TableTalk</h1>
           <div className="app-header-actions">
             <div className="view-menu-wrap" ref={viewMenuRef}>
               <button
@@ -457,6 +469,8 @@ export default function HomePage() {
               onSaveView={handleSaveView}
               onLoadView={handleLoadView}
               onDeleteView={handleDeleteView}
+              onImportDataset={handleImportDataset}
+              onDeleteDataset={handleDeleteDataset}
             />
           )}
 
