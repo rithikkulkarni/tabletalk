@@ -1,10 +1,6 @@
-/**
- * Port of AiBean.processPrompt() — the full AI analysis pipeline.
- * Uses Vercel AI SDK + Anthropic Claude in place of Gemini/Ollama.
- */
 import { NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getDataset } from '@/lib/datasets';
 import {
   ensureTable, executeQuery, buildStepSql,
@@ -14,8 +10,8 @@ import { createChart, applyVisualChange } from '@/lib/chart-factory';
 import { UNIFIED_SYS, FINAL_ANSWER_SYS, REPAIR_SYS, buildFewShotExamples } from '@/lib/ai-prompt';
 import type { AnalyzeRequest, AnalyzeResponse, AiDecision, Step, GridChange, VisualChange } from '@/lib/types';
 
-const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
+const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+const MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -25,11 +21,11 @@ function esc(t: string): string {
 
 async function callModel(userPrompt: string, systemPrompt: string): Promise<string> {
   const { text } = await generateText({
-    model: anthropic(MODEL),
+    model: google(MODEL),
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.1,
-    maxOutputTokens: 4096,
+    maxTokens: 4096,
   });
   return text;
 }

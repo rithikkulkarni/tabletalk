@@ -6,6 +6,7 @@ import type {
   DatasetInfo, ColumnDef, SortEntry, TableConfig, SavedView,
   ChatMessage, Conversation, ViewSnapshot, AnalyzeResponse,
 } from '@/lib/types';
+import { applyVisualChange } from '@/lib/chart-factory';
 
 const DataGrid        = dynamic(() => import('@/components/DataGrid'),        { ssr: false });
 const ChartPanel      = dynamic(() => import('@/components/ChartPanel'),      { ssr: false });
@@ -264,6 +265,10 @@ export default function HomePage() {
       setColumns(nc); setRows(response.queryRows); setSortEntries([]); setAnalysisViewActive(true);
       setPreAggRows(response.preAggRows ?? []); setGroupByFields(response.groupByFields ?? []);
       setConfigJson(buildConfigJson(dsRef.current, nc, []));
+    }
+
+    if (response.visualChange && chartRef.current) {
+      setChartJson(applyVisualChange(chartRef.current, response.visualChange));
     }
 
     if (response.chartJson !== undefined) { setChartJson(response.chartJson); setChartTitle(response.chartTitle ?? ''); }

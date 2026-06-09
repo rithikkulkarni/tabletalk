@@ -402,10 +402,10 @@ export async function getAllDatasets(): Promise<Map<string, DatasetInfo>> {
     if (apiRows.length > 0) {
       map.set('payments', { id: 'payments', label: 'SEP Transactions', columns: sepTransactionColumns(), rows: apiRows });
     } else {
-      map.set('payments', buildSepMockPayments());
+      map.set('payments', { ...buildSepMockPayments(), id: 'payments' });
     }
   } catch {
-    map.set('payments', buildSepMockPayments());
+    map.set('payments', { ...buildSepMockPayments(), id: 'payments' });
   }
 
   map.set('sepDemo',     buildSepMockPayments());

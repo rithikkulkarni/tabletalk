@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/google": "^3.0.80",
     "@tanstack/react-table": "^8.21.3",
     "ai": "^6.0.198",
     "better-sqlite3": "^12.10.0",
